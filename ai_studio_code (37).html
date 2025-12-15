@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado DETRAN - Estudo Baseado nas Fotos</title>
+    <style>
+        :root {
+            --primary-color: #004d40; /* Verde Detran escuro */
+            --secondary-color: #ffeb3b; /* Amarelo sinalização */
+            --text-color: #333;
+            --bg-color: #f4f4f9;
+            --correct-color: #4caf50;
+            --wrong-color: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        .container {
+            background-color: white;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        /* Tela Inicial */
+        .start-screen p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background-color: #00695c;
+            transform: scale(1.05);
+        }
+
+        /* Quiz */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #e0f2f1;
+            border: 2px solid transparent;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1em;
+            transition: 0.2s;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: #b2dfdb;
+            border-color: var(--primary-color);
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--wrong-color);
+            color: white;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        /* Resultado */
+        .score-box {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--primary-color);
+        }
+
+        .message {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .pass { color: var(--correct-color); }
+        .fail { color: var(--wrong-color); }
+
+        /* Rodapé com dicas */
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- TELA INICIAL -->
+        <div id="start-screen" class="start-screen">
+            <h1>Simulado DETRAN</h1>
+            <p>Este simulado contém <strong>30 questões</strong> baseadas nas fotos do seu material de estudo.</p>
+            <p>Temas: Legislação, Direção Defensiva, Mecânica, Meio Ambiente e Placas.</p>
+            <p>Você precisa acertar pelo menos <strong>21 questões (70%)</strong> para passar.</p>
+            <button class="btn" onclick="startQuiz()">Começar Prova</button>
+        </div>
+
+        <!-- TELA DO QUIZ -->
+        <div id="quiz-screen" class="hide">
+            <div class="quiz-header">
+                <span id="question-count">Questão 1/30</span>
+                <span id="score-display">Acertos: 0</span>
+            </div>
+            <div id="question-container">
+                <p id="question-text" class="question-text">Texto da pergunta aqui...</p>
+                <div id="options-container" class="options-container">
+                    <!-- Opções geradas via JS -->
+                </div>
+            </div>
+            <div class="controls">
+                <button id="next-btn" class="btn hide" onclick="nextQuestion()">Próxima</button>
+            </div>
+        </div>
+
+        <!-- TELA DE RESULTADO -->
+        <div id="result-screen" class="hide">
+            <h1>Resultado Final</h1>
+            <div class="score-box" id="final-score">0/30</div>
+            <p id="result-message" class="message"></p>
+            <button class="btn" onclick="restartQuiz()">Refazer Simulado</button>
+            <p class="footer-note">Continue estudando pelo material impresso para fixar o conteúdo.</p>
+        </div>
+    </div>
+
+    <script>
+        // BANCO DE QUESTÕES (Baseado nas imagens fornecidas)
+        const questions = [
+            // MECÂNICA BÁSICA (Baseado nas fotos das páginas de mecânica)
+            {
+                question: "A manutenção preventiva faz parte da direção segura. Sendo assim, os amortecedores e molas em mau estado podem acarretar:",
+                options: [
+                    "Desconforto aos ocupantes e travamento das rodas.",
+                    "Aumento do consumo de combustível e poluentes.",
+                    "Chiado ao pisar no freio e pneu furado.",
+                    "O capotamento do veículo em curvas e desconforto."
+                ],
+                answer: 3
+            },
+            {
+                question: "A finalidade do sistema de arrefecimento é:",
+                options: [
+                    "Aquecer o motor.",
+                    "Manter a temperatura ideal de trabalho do motor.",
+                    "Reduzir a potência do motor.",
+                    "Controlar as rotações do motor."
+                ],
+                answer: 1
+            },
+            {
+                question: "O painel de instrumentos do veículo serve para:",
+                options: [
+                    "Completar a decoração interna do veículo.",
+                    "Indicar todo e qualquer tipo de defeito do veículo.",
+                    "Orientar o condutor sobre as condições gerais do veículo.",
+                    "Indicar a velocidade do veículo, apenas."
+                ],
+                answer: 2
+            },
+            {
+                question: "A bateria do veículo tem como função principal:",
+                options: [
+                    "Armazenar e fornecer corrente elétrica.",
+                    "Gerar energia elétrica para o motor.",
+                    "Regular a voltagem do sistema elétrico.",
+                    "Transformar energia mecânica em elétrica."
+                ],
+                answer: 0
+            },
+            
+            // DIREÇÃO DEFENSIVA (Baseado nas fotos de Dir. Defensiva)
+            {
+                question: "Para desatolar um veículo da areia, o condutor deve:",
+                options: [
+                    "Acelerar bastante em primeira marcha.",
+                    "Esvaziar um pouco os pneus para aumentar a área de contato.",
+                    "Virar bem o volante para um dos lados e acelerar.",
+                    "Dirigir bem devagar, evitando que entupa o escapamento."
+                ],
+                answer: 1
+            },
+            {
+                question: "O condutor que não mantém uma distância segura pode se envolver em colisão com:",
+                options: [
+                    "O veículo de trás.",
+                    "O veículo que vem em sentido contrário.",
+                    "Motociclistas.",
+                    "O veículo da frente."
+                ],
+                answer: 3
+            },
+            {
+                question: "Em relação à segurança do ciclista, qual a alternativa INCORRETA?",
+                options: [
+                    "O ciclista não deve utilizar fones de ouvido.",
+                    "Deve-se manter uma distância lateral mínima de 1,5m ao ultrapassar.",
+                    "O ciclista deve equipar sua bicicleta com dispositivos refletivos.",
+                    "O condutor deve buzinar insistentemente para alertar o ciclista."
+                ],
+                answer: 3
+            },
+            {
+                question: "Dirigindo sob chuva forte, com os pneus gastos, o condutor deve:",
+                options: [
+                    "Seguir em frente e acelerar para acabar logo com a viagem.",
+                    "Trafegar em velocidade reduzida e substituir os pneus assim que possível.",
+                    "Calibrar os pneus, aumentando a pressão.",
+                    "Parar em uma borracharia e mandar 'riscar' os pneus."
+                ],
+                answer: 1
+            },
+            {
+                question: "O cinto de segurança deve ser utilizado por:",
+                options: [
+                    "Apenas pelos ocupantes do banco da frente.",
+                    "Por todos os ocupantes do veículo.",
+                    "Somente pelos ocupantes do banco de trás.",
+                    "Somente pelos adultos."
+                ],
+                answer: 1
+            },
+
+            // LEGISLAÇÃO / INFRAÇÕES (Baseado nas tabelas e textos das fotos)
+            {
+                question: "Dirigir com apenas uma das mãos é permitido quando:",
+                options: [
+                    "O condutor estiver comendo ou bebendo.",
+                    "O condutor for fazer sinais de braço ou mudar a marcha.",
+                    "O trânsito estiver muito lento ou parado.",
+                    "Nunca é permitido."
+                ],
+                answer: 1
+            },
+            {
+                question: "Avançar o sinal vermelho do semáforo ou o de parada obrigatória é uma infração:",
+                options: [
+                    "Grave.",
+                    "Média.",
+                    "Leve.",
+                    "Gravíssima."
+                ],
+                answer: 3
+            },
+            {
+                question: "Qual a validade da CNH para condutores com idade inferior a 50 anos?",
+                options: [
+                    "5 anos.",
+                    "3 anos.",
+                    "10 anos.",
+                    "Indeterminada."
+                ],
+                answer: 2
+            },
+            {
+                question: "Deixar o condutor ou passageiro de usar o cinto de segurança é infração:",
+                options: [
+                    "Grave.",
+                    "Gravíssima.",
+                    "Média.",
+                    "Leve."
+                ],
+                answer: 0
+            },
+            {
+                question: "Usar buzina em situação que não a de simples toque breve como advertência ao pedestre ou a condutores de outros veículos é infração:",
+                options: [
+                    "Leve.",
+                    "Média.",
+                    "Grave.",
+                    "Gravíssima."
+                ],
+                answer: 0
+            },
+
+            // PLACAS (Baseado nas imagens de sinalização)
+            {
+                question: "A placa R-1 (Octogonal/Vermelha) significa:",
+                options: [
+                    "Dê a preferência.",
+                    "Parada obrigatória.",
+                    "Proibido estacionar.",
+                    "Siga em frente."
+                ],
+                answer: 1
+            },
+            {
+                question: "Diante da placa A-24 (Animais), o condutor deve:",
+                options: [
+                    "Aumentar a velocidade para passar rápido.",
+                    "Buzinar para espantar os animais.",
+                    "Reduzir a velocidade e ficar atento a possíveis animais na pista.",
+                    "Parar o veículo no acostamento."
+                ],
+                answer: 2
+            },
+            {
+                question: "A placa que indica 'Proibido virar à esquerda' é classificada como:",
+                options: [
+                    "Sinalização de Advertência.",
+                    "Sinalização de Regulamentação.",
+                    "Sinalização de Indicação.",
+                    "Sinalização de Obras."
+                ],
+                answer: 1
+            },
+            {
+                question: "As placas de cor amarela têm a função de:",
+                options: [
+                    "Regulamentar proibições.",
+                    "Indicar serviços auxiliares.",
+                    "Advertir sobre perigos ou condições da via.",
+                    "Educar o usuário."
+                ],
+                answer: 2
+            },
+
+            // NORMAS DE CIRCULAÇÃO (Baseado nos desenhos de cruzamentos)
+            {
+                question: "Em um cruzamento não sinalizado, a preferência de passagem é:",
+                options: [
+                    "Do veículo que vem pela esquerda.",
+                    "Do veículo que desenvolve maior velocidade.",
+                    "Do veículo que vem pela direita.",
+                    "Dos ônibus e caminhões."
+                ],
+                answer: 2
+            },
+            {
+                question: "Ao ouvir a sirene de uma ambulância, o condutor deve:",
+                options: [
+                    "Acelerar para liberar o trânsito.",
+                    "Deixar livre a passagem pela esquerda, indo para a direita ou parando.",
+                    "Seguir atrás da ambulância aproveitando o caminho livre.",
+                    "Buzinar para alertar outros motoristas."
+                ],
+                answer: 1
+            },
+            {
+                question: "A ultrapassagem de outro veículo em movimento deverá ser feita:",
+                options: [
+                    "Pela direita, exceto quando o veículo da frente sinalizar que vai entrar à esquerda.",
+                    "Pela esquerda, sempre.",
+                    "Pelo acostamento.",
+                    "Por qualquer lado que houver espaço."
+                ],
+                answer: 1
+            },
+            {
+                question: "Nas rodovias sem sinalização regulamentadora, a velocidade máxima para automóveis em pista dupla é:",
+                options: [
+                    "80 km/h.",
+                    "90 km/h.",
+                    "100 km/h.",
+                    "110 km/h."
+                ],
+                answer: 3
+            },
+            
+            // PRIMEIROS SOCORROS E MEIO AMBIENTE
+            {
+                question: "Em caso de acidente com vítima, a primeira atitude a tomar é:",
+                options: [
+                    "Remover a vítima do veículo imediatamente.",
+                    "Dar água para a vítima beber.",
+                    "Sinalizar o local para evitar novos acidentes.",
+                    "Fugir do local."
+                ],
+                answer: 2
+            },
+            {
+                question: "É considerado crime de trânsito:",
+                options: [
+                    "Dirigir com a CNH vencida há mais de 30 dias.",
+                    "Estacionar em local proibido.",
+                    "Afastar-se o condutor do local do acidente, para fugir à responsabilidade penal ou civil.",
+                    "Transitar em velocidade superior à máxima em 20%."
+                ],
+                answer: 2
+            },
+            {
+                question: "O que significa o termo 'aquaplanagem'?",
+                options: [
+                    "Perda de aderência do pneu com o solo devido a uma camada de água.",
+                    "Freio molhado que não funciona.",
+                    "Dirigir dentro de um rio.",
+                    "O motor do carro entra água e para."
+                ],
+                answer: 0
+            },
+            {
+                question: "A fumaça preta saindo do escapamento indica:",
+                options: [
+                    "Queima excessiva de combustível e motor desregulado.",
+                    "Queima de óleo do motor.",
+                    "Motor funcionando perfeitamente.",
+                    "Combustível de boa qualidade."
+                ],
+                answer: 0
+            },
+
+            // REFORÇO GERAL
+            {
+                question: "O condutor deve verificar a pressão dos pneus:",
+                options: [
+                    "Quando estiverem quentes, após rodar bastante.",
+                    "Diariamente, antes de sair.",
+                    "Periodicamente, quando estiverem frios.",
+                    "Apenas quando for viajar."
+                ],
+                answer: 2
+            },
+            {
+                question: "A distância de seguimento (ou segurança) é:",
+                options: [
+                    "A distância que o veículo percorre enquanto você pisa no freio.",
+                    "A distância entre o seu veículo e o que segue à frente.",
+                    "A distância total de parada.",
+                    "Dois carros de distância."
+                ],
+                answer: 1
+            },
+            {
+                question: "O capacete de motociclista deve estar:",
+                options: [
+                    "Solto para facilitar a respiração.",
+                    "Devidamente fixado à cabeça pelo conjunto jugular (cinta), sem folgas.",
+                    "No cotovelo quando estiver calor.",
+                    "Apenas na cabeça do piloto, passageiro não precisa."
+                ],
+                answer: 1
+            },
+            {
+                question: "Segundo as normas de circulação, a faixa da esquerda destina-se a:",
+                options: [
+                    "Veículos de carga.",
+                    "Ultrapassagem e deslocamento de veículos em maior velocidade.",
+                    "Veículos lentos.",
+                    "Estacionamento de emergência."
+                ],
+                answer: 1
+            }
+        ];
+
+        // LÓGICA DO SIMULADO
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let shuffledQuestions = [];
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const questionCount = document.getElementById('question-count');
+        const scoreDisplay = document.getElementById('score-display');
+        const nextBtn = document.getElementById('next-btn');
+
+        function startQuiz() {
+            startScreen.classList.add('hide');
+            resultScreen.classList.add('hide');
+            quizScreen.classList.remove('hide');
+            
+            // Embaralhar as questões
+            shuffledQuestions = questions.sort(() => Math.random() - 0.5);
+            currentQuestionIndex = 0;
+            score = 0;
+            updateScore();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            questionText.innerText = currentQuestion.question;
+            questionCount.innerText = `Questão ${currentQuestionIndex + 1}/${shuffledQuestions.length}`;
+
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-btn');
+                button.onclick = () => checkAnswer(index, button, currentQuestion.answer);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function resetState() {
+            nextBtn.classList.add('hide');
+            while (optionsContainer.firstChild) {
+                optionsContainer.removeChild(optionsContainer.firstChild);
+            }
+        }
+
+        function checkAnswer(selectedIndex, selectedButton, correctIndex) {
+            const buttons = optionsContainer.querySelectorAll('.option-btn');
+            
+            // Desabilitar todos os botões após a escolha
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === correctIndex) {
+                selectedButton.classList.add('correct');
+                score++;
+                updateScore();
+            } else {
+                selectedButton.classList.add('wrong');
+                // Mostrar a correta
+                buttons[correctIndex].classList.add('correct');
+            }
+
+            nextBtn.classList.remove('hide');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function updateScore() {
+            scoreDisplay.innerText = `Acertos: ${score}`;
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hide');
+            resultScreen.classList.remove('hide');
+            
+            const finalScoreEl = document.getElementById('final-score');
+            const msgEl = document.getElementById('result-message');
+            
+            finalScoreEl.innerText = `${score} / ${shuffledQuestions.length}`;
+            
+            if (score >= 21) {
+                msgEl.innerText = "Parabéns! Você foi APROVADO!";
+                msgEl.className = "message pass";
+            } else {
+                msgEl.innerText = "Você não atingiu a pontuação mínima (21). Continue estudando!";
+                msgEl.className = "message fail";
+            }
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+    </script>
+</body>
+</html>
